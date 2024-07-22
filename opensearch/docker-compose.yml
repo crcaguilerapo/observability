@@ -1,0 +1,49 @@
+version: '3'
+services:
+  opensearch: # This is also the hostname of the container within the Docker network (i.e. https://opensearch/)
+    image: opensearchproject/opensearch:latest # Specifying the latest available image - modify if you want a specific version
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - "DISABLE_SECURITY_PLUGIN=true" # Disables Security plugin
+      - path.repo=/usr/share/opensearch/snapshots
+      #- OPENSEARCH_INITIAL_ADMIN_PASSWORD=QL/87z8£ZW&4   # Sets the demo admin user password when using demo configuration, required for OpenSearch 2.12 and later
+    volumes:
+      - opensearch-data1:/usr/share/opensearch/data # Creates volume called opensearch-data1 and mounts it to the container
+      - repo:/usr/share/opensearch/snapshots
+    ports:
+      - 9200:9200 # REST API
+      - 9600:9600 # Performance Analyzer
+    networks:
+      - opensearch-net # All of the containers will join the same Docker bridge network
+    user: opensearch
+    command: >
+      /bin/bash -c "
+        chown -R opensearch:opensearch /usr/share/opensearch/snapshots &&
+        chmod -R 777 /usr/share/opensearch/snapshots &&
+        ./opensearch-docker-entrypoint.sh opensearch
+      "
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    environment:
+      - STORAGE_TYPE=elasticsearch
+      - ES_HOSTS=http://opensearch:9200
+      - SELF_TRACING_ENABLED=true
+      - JAVA_OPTS=-Xms128m -Xmx128m -XX:+ExitOnOutOfMemoryError
+    ports:
+      - "9411:9411"
+    networks:
+      - opensearch-net
+    depends_on:
+      - opensearch
+    command: --logging.level.zipkin2=DEBUG
+
+volumes:
+  opensearch-data1:
+  repo:
+
+networks:
+  opensearch-net:
+
+
