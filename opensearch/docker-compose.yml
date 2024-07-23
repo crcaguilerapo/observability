@@ -21,7 +21,8 @@ services:
       /bin/bash -c "
         chown -R opensearch:opensearch /usr/share/opensearch/snapshots &&
         chmod -R 777 /usr/share/opensearch/snapshots &&
-        ./opensearch-docker-entrypoint.sh opensearch
+        yum install util-linux -y &&
+        su opensearch -c './opensearch-docker-entrypoint.sh opensearch'
       "
   zipkin:
     image: openzipkin/zipkin:latest
